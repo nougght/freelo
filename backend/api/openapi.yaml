@@ -1,0 +1,429 @@
+openapi: 3.0.3
+servers:
+  - url: 'https://freelo.nought.ru/api/v1'
+info:
+  description: Freelo is a micro job marketplace for freelancers and clients.
+  version: 1.0.0
+  title: Freelo API
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: auth
+    description: Sign up and log in
+  - name: users
+    description: Operations about user
+  - name: freelance-profiles
+    description: Freelancer profiles
+
+security:
+  - bearerAuth: []
+paths:
+  /auth/signup:
+    post:
+      tags: [auth]
+      summary: Register a new user
+      operationId: signup
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Log in with email and password
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+  /users/me:
+    get:
+      tags: [users]
+      summary: Get the current user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+  /users/me/profile:
+    patch:
+      tags: [users]
+      summary: Partially update the current user's profile
+      operationId: updateCurrentUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+  /users/me/freelance-profile:
+    put:
+      tags: [freelance-profiles]
+      summary: Create or replace the current user's freelancer profile
+      operationId: upsertCurrentFreelanceProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertFreelanceProfileRequest'
+      responses:
+        '200':
+          description: Freelancer profile saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreelanceProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [freelance-profiles]
+      summary: Delete the current user's freelancer profile
+      operationId: deleteCurrentFreelanceProfile
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [users]
+      summary: Get a public user profile
+      operationId: getUserProfile
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+  /users/{userId}/freelance-profile:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [freelance-profiles]
+      summary: Get a freelancer profile
+      operationId: getFreelanceProfile
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreelanceProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+  /users/by-username/{username}:
+    parameters:
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [users]
+      summary: Get a public user profile by username
+      operationId: getUserProfileByUsername
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    User:
+      type: object
+      required: [id, email, profile, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      required: [userId, displayName, clientRatingCount]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+          nullable: true
+        displayName:
+          type: string
+        clientRatingAvg:
+          type: number
+          format: double
+          nullable: true
+        clientRatingCount:
+          type: integer
+          format: int64
+
+    FreelanceProfile:
+      type: object
+      required: [userId, ratingAvg, ratingCount, ordersCompleted, createdAt, updatedAt]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        bioShort:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        ratingAvg:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        ordersCompleted:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SignupRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: required,email,max=256
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          # bcrypt ignores input beyond 72 bytes
+          x-oapi-codegen-extra-tags:
+            validate: required,min=8,max=72
+        displayName:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: required,max=256
+        username:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: omitempty,min=3,max=32
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: required,email,max=256
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          x-oapi-codegen-extra-tags:
+            validate: required,max=72
+
+    AuthResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn, user]
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          format: int64
+          description: Access token lifetime in seconds
+          example: 3600
+        user:
+          $ref: '#/components/schemas/User'
+
+    UpdateUserProfileRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: omitempty,min=1,max=256
+        username:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: omitempty,min=3,max=32
+
+    UpsertFreelanceProfileRequest:
+      type: object
+      properties:
+        bioShort:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: omitempty,max=100
+        bio:
+          type: string
+          x-oapi-codegen-extra-tags:
+            validate: omitempty,max=5000
+
+    Error:
+      type: object
+      required: [key, message]
+      properties:
+        key:
+          type: string
+          description: Machine-readable error key
+          example: user_not_found
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Email or username already taken
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -2,7 +2,7 @@
 
 ## Основные принципы
 
-- монорепо : `backend/`, `web/`, `mobile/`, `packages/shared/` (API-клиент, типы, zod, хуки React Query).
+- монорепо : `backend/`, `../clients/web`, `../clients/mobile`, `packages/shared/` (API-клиент, типы, zod, хуки React Query).
 - общий контракт API: `openapi.yaml` -> oapi-codegen (Go/Gin) + orval (TS + React Query).
 - модульный монолит, слои handler -> service -> repo.
 - эскроу - без реальных платежей, mock-пополнение.
